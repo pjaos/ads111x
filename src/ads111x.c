@@ -217,7 +217,7 @@ static void waitfor_adc_conversion_completion(uint16_t device_address) {
  *	SAMPLES_PER_SECOND_860
  * @param single_ended If 1 then the ADC is single ended. If 0 then
  *                     the ADC is differential.
- * @return The ADC value or FS_VOLTAGE_ERROR, MUX_ERROR, SPS_ERROR (all greater than 65535)
+ * @return The raw ADC value or FS_VOLTAGE_ERROR, MUX_ERROR, SPS_ERROR (all greater than 65535)
  */
 uint16_t get_adc_value(uint16_t device_address, uint8_t adc, uint8_t fs_voltage_id, uint8_t samples_per_second, bool single_ended) {
 	uint16_t adc_value = 0;
@@ -261,6 +261,64 @@ uint16_t get_adc_value(uint16_t device_address, uint8_t adc, uint8_t fs_voltage_
 	adc_value = read_16_bit_reg(device_address, CONVERSION_REG);
 
 	return adc_value;
+}
+
+/**
+ * @brief Setup an ADC.
+ * @param device_address The address of the I2C device
+ * @param adc The ADC to be selected (0,1,2 & 3 are valid for ADS115).
+ *            Valid options are
+ *            ADC0
+ *            ADC1
+ *            ADC2
+ *            ADC3
+ * @param fs_voltage_id The full scale voltage. Any of the following
+ *        values are valid.
+ *          FS_VOLTAGE_6_144
+ *          FS_VOLTAGE_4_096
+ *          FS_VOLTAGE_2_048
+ *          FS_VOLTAGE_1_024
+ *          FS_VOLTAGE_0_512
+ *          FS_VOLTAGE_0_256
+ * @param samples_per_second Samples per second value.
+ *  SAMPLES_PER_SECOND_8,
+ *  SAMPLES_PER_SECOND_16,
+ *  SAMPLES_PER_SECOND_32,
+ *  SAMPLES_PER_SECOND_64,
+ *  SAMPLES_PER_SECOND_128,
+ *  SAMPLES_PER_SECOND_250,
+ *  SAMPLES_PER_SECOND_475,
+ *  SAMPLES_PER_SECOND_860
+ * @param single_ended If 1 then the ADC is single ended. If 0 then
+ *                     the ADC is differential.
+ * @param sixteen_bit_adc If true then a 16 bit ADC is fitted. If false then a 12 bit ADC is fitted.
+ * @return The two's compliment ADC value. The ADC range will be from the -ve limit to the +ve limit.
+ */
+int16_t get_adc_twos_compliment_value(uint16_t device_address, uint8_t adc, uint8_t fs_voltage_id, uint8_t samples_per_second, bool single_ended, bool sixteen_bit_adc) {
+    int16_t adc_value = 0;
+    uint16_t raw_adc_value = get_adc_value(device_address, adc, fs_voltage_id, samples_per_second, single_ended);
+    if( sixteen_bit_adc ) {
+        // ADC value is in twos compliment format
+        // If negative.
+        if( raw_adc_value&0x8000) {
+            adc_value = -(0x7fff-(raw_adc_value&0x07fff)+1);
+        }
+        else {
+            adc_value = raw_adc_value;
+        }
+    }
+    // 12 Bit ADC
+    else {
+        // ADC value is in twos compliment format
+        // If negative.
+        if( raw_adc_value&0x800) {
+            adc_value = -(0x7ff-(raw_adc_value&0x07ff)+1);
+        }
+        else {
+            adc_value = raw_adc_value;
+        }
+    }
+    return adc_value;
 }
 
 /**

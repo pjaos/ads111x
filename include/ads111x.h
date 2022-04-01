@@ -71,5 +71,6 @@ enum {
 
 
 uint16_t get_adc_value(uint16_t device_address, uint8_t adc, uint8_t fs_voltage_id, uint8_t samples_per_second, bool single_ended);
+int16_t  get_adc_twos_compliment_value(uint16_t device_address, uint8_t adc, uint8_t fs_voltage_id, uint8_t samples_per_second, bool single_ended, bool sixteen_bit_adc);
 
 #endif
